@@ -5,6 +5,15 @@
 - [00_site_setup_guide.md](00_site_setup_guide.md) — **Agent setup guide**: How to autonomously implement a new site scraper from just a company name. Read this first.
 - [mcp_integration.md](mcp_integration.md) — MCP (Model Context Protocol) integration status and available database tools.
 
+## Active Scrapers
+
+- [Apple](sites/apple.md) — ✅ Working
+- [Google](sites/google.md) — ✅ Working
+
+## Disabled Scrapers
+
+- [Amazon](sites/amazon.md) — ❌ Skipped (requires Google OAuth login)
+
 ## Site Learnings
 
 Per-site documentation in `sites/`:
