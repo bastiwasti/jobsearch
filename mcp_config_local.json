@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "jobsearch-db": {
+      "command": "/home/vscode/projects/JobHunt/JobSearch/mcp-venv/bin/python",
+      "args": [
+        "/home/vscode/projects/JobHunt/JobSearch/mcp_server.py"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://jobsearch_readonly:LaqBttd1aw6F5u9m@localhost:5432/jobsearch"
+      }
+    }
+  }
+}

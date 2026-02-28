@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: jobsearch
+      POSTGRES_USER: jobsearch
+      POSTGRES_PASSWORD: jobsearch
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: jobsearch-pgweb
+    restart: unless-stopped
+    ports:
+      - "8080:8081"
+    environment:
+      - PGWEB_BASIC_AUTH_USERNAME=admin
+      - PGWEB_BASIC_AUTH_PASSWORD=LaqBttd1aw6F5u9m
+    depends_on:
+      - postgres
+    command: --bind=0.0.0.0 --listen=8081 --url postgres://jobsearch_readonly:LaqBttd1aw6F5u9m@postgres:5432/jobsearch?sslmode=disable
+
+volumes:
+  pgdata:
