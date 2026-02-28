@@ -105,6 +105,7 @@ class Xing(BaseSite):
 
     def parse(self, html: str) -> list[JobListing]:
         listings = []
+        import re
 
         try:
             from bs4 import BeautifulSoup as BS
@@ -115,7 +116,9 @@ class Xing(BaseSite):
 
             for i, card in enumerate(job_cards):
                 try:
-                    title_el = card.select_one('h2, h3')
+                    if not card:
+                        continue
+                    title_el = card.select_one('h2')
                     title = title_el.get_text(strip=True) if title_el else ""
 
                     link_el = card.select_one('a')
@@ -132,26 +135,32 @@ class Xing(BaseSite):
 
                     self.seen_urls.add(url)
 
-                    card_text = card.get_text(separator=' ', strip=True)
-
                     company = ""
                     location = ""
                     salary = ""
                     posted_date = ""
 
-                    lines = card_text.split('\n')
-                    for j, line in enumerate(lines):
-                        line = line.strip()
-                        if not line:
-                            continue
-                        if any(city in line for city in self.NRW_CITIES) or 'Remote' in line or 'Berlin' in line or 'München' in line:
-                            location = line
-                        elif '€' in line and ('–' in line or '-' in line):
-                            salary = line
-                        elif 'ago' in line.lower() or 'vor' in line.lower() or 'gestern' in line.lower() or 'heute' in line.lower():
-                            posted_date = line
-                        elif j < len(lines) // 2 and not company:
-                            company = line
+                    card_html = str(card)
+                    company_match = re.search(r'(job-teaser-list-item-styles__Company[^>]*>)([^<]+)(</p>)', card_html)
+                    if company_match:
+                        company = company_match.group(2).strip()
+
+                    location_match = re.search(r'<p[^>]*?data-xds="BodyCopy"[^>]*?>([^<]+)</p>', card_html)
+                    if location_match:
+                        location = location_match.group(1).strip()
+                    else:
+                        for city in self.NRW_CITIES:
+                            if re.search(r'\b' + re.escape(city) + r'\b', card_html):
+                                location = city
+                                break
+
+                    salary_match = re.search(r'€[^<]*>€[^<]*<[^>]*([€0-9.,\s–\s]+[€0-9.,\s]+)', card_html)
+                    if salary_match:
+                        salary = salary_match.group(1).replace(' ', ' ').strip()
+
+                    posted_date_match = re.search(r'publication-date[^>]*>([^<]+)</p>', card_html)
+                    if posted_date_match:
+                        posted_date = posted_date_match.group(1).strip()
 
                     listings.append(JobListing(
                         title=title,
@@ -175,3 +184,4 @@ class Xing(BaseSite):
             traceback.print_exc()
 
         return listings
+
