@@ -43,6 +43,7 @@ class Xing(BaseSite):
         """
         self.search_config = search_config or {}
         self.max_searches = search_config.get('max_searches', None) if search_config else None
+        self.seen_urls = set()
 
     @property
     def search_url(self) -> str:
@@ -55,40 +56,51 @@ class Xing(BaseSite):
             {"location": city} for city in self.NRW_CITIES
         ] + [{"workplace": "full-remote"}]
 
-        search_count = 0
-        for search in searches:
-            if self.max_searches and search_count >= self.max_searches:
-                print(f"Stopping at {search_count} searches (max_searches={self.max_searches})")
-                break
+        total_searches = len(searches) * len(self.KEYWORDS)
+        print(f"Total searches planned: {total_searches} (max_searches={self.max_searches})")
 
-            for keyword in self.KEYWORDS:
+        search_count = 0
+        try:
+            for search in searches:
                 if self.max_searches and search_count >= self.max_searches:
                     print(f"Stopping at {search_count} searches (max_searches={self.max_searches})")
                     break
 
-                if "location" in search:
-                    url = f"{self.base_url}?keywords={quote(keyword)}&location={quote(search['location'])}"
-                else:
-                    url = f"{self.base_url}?keywords={quote(keyword)}&workplace=full-remote"
+                for keyword in self.KEYWORDS:
+                    if self.max_searches and search_count >= self.max_searches:
+                        print(f"Stopping at {search_count} searches (max_searches={self.max_searches})")
+                        break
 
-                print(f"Search {search_count+1}: {keyword} {search.get('location', 'remote')}")
-                await page.goto(url, wait_until='domcontentloaded')
-                await page.wait_for_timeout(self.DELAY_MS)
+                    if "location" in search:
+                        url = f"{self.base_url}?keywords={quote(keyword)}&location={quote(search['location'])}"
+                    else:
+                        url = f"{self.base_url}?keywords={quote(keyword)}&workplace=full-remote"
 
-                html_parts.append(await page.content())
+                    print(f"Search {search_count+1}/{total_searches}: {keyword} {search.get('location', 'remote')}")
+                    await page.goto(url, wait_until='domcontentloaded', timeout=30000)
+                    await page.wait_for_timeout(self.DELAY_MS)
 
-                try:
-                    for i in range(self.MAX_LOADS - 1):
-                        mehr_btn = page.locator('button:has-text("Mehr")').first
-                        await mehr_btn.wait_for(state='visible', timeout=3000)
-                        await mehr_btn.click()
-                        await page.wait_for_timeout(self.DELAY_MS)
-                        html_parts.append(await page.content())
-                except Exception:
-                    break
+                    html_parts.append(await page.content())
 
-                search_count += 1
+                    try:
+                        for i in range(self.MAX_LOADS - 1):
+                            mehr_btn = page.locator('button:has-text("Mehr")').first
+                            await mehr_btn.wait_for(state='visible', timeout=5000)
+                            await mehr_btn.evaluate('el => el.click()')
+                            await page.wait_for_timeout(self.DELAY_MS)
+                            html_parts.append(await page.content())
+                            print(f"    Loaded page {i+2} for this search")
+                    except Exception as e:
+                        print(f"  Pagination error: {e}")
+                        break
 
+                    search_count += 1
+        except Exception as e:
+            print(f"ERROR in fetch: {e}")
+            import traceback
+            traceback.print_exc()
+
+        print(f"Completed {search_count} searches")
         return "\n".join(html_parts)
 
     def parse(self, html: str) -> list[JobListing]:
@@ -114,6 +126,11 @@ class Xing(BaseSite):
                         continue
 
                     url = urljoin('https://www.xing.com', str(href))
+
+                    if url in self.seen_urls:
+                        continue
+
+                    self.seen_urls.add(url)
 
                     card_text = card.get_text(separator=' ', strip=True)
 
