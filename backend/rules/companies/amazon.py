@@ -11,7 +11,8 @@ Meta:
     - Anti-bot: Strong measures, requires 2000ms delays
     - Parser: html5lib required for multi-page concatenation
     - Test date: 2026-02-28
-    - Status: Working, production-ready
+    - Status: DISABLED - Requires Google login to access job listings
+    - Reason: Amazon.jobs now requires OAuth authentication; unauthenticated requests return placeholder results only
     - Filter approach: EXCLUDE only (no INCLUDE patterns)
 """
 
@@ -25,6 +26,7 @@ class Amazon(BaseSite):
     name = "amazon"
     base_url = "https://www.amazon.jobs/en/search"
     needs_browser = True
+    disabled = True
 
     # Configuration
     MAX_LOADS = 5  # 10 jobs per load

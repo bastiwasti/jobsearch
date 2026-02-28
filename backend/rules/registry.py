@@ -44,6 +44,7 @@ def _discover_sites() -> dict[str, Type[BaseSite]]:
                     and issubclass(attr, BaseSite)
                     and attr is not BaseSite
                     and getattr(attr, "name", "")
+                    and not getattr(attr, "disabled", False)
                 ):
                     sites[attr.name] = attr
 

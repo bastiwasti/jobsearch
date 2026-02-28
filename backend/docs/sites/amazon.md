@@ -4,7 +4,38 @@
 https://www.amazon.jobs/en/search
 
 ## Status
-✅ Working - Successfully scrapes 40 listings (4 pages)
+❌ **SKIPPED** - Requires Google login to access job listings
+
+## Reason for Skipping
+Amazon.jobs now requires authenticated access (Google OAuth) to view job listings. Unauthenticated requests receive a placeholder result set (10 generic US jobs) regardless of URL parameters or language settings.
+
+## Investigation (2026-02-28)
+
+### Findings:
+- Unauthenticated access returns placeholder jobs only (10 generic US roles)
+- Germany jobs exist (~1% of listings) but are only visible when logged in
+- URL parameters (`?location=Germany`, `?country=DE`) have no effect without authentication
+- German language page (`/de/search`) returns same placeholder results as English
+- Location filtering is only available to authenticated users
+
+### Auth Requirements:
+- Google OAuth login required
+- Account creation needed before access
+- 2FA typically enabled on accounts
+- Session tokens would need to be stored/refreshed
+
+### Alternatives for Amazon Germany:
+- **LinkedIn Jobs** - Search for "Amazon" + "Germany"
+- **StepStone** - Aggregates Amazon Germany postings
+- **Indeed Germany** - Aggregates Amazon Germany postings
+- **AWS Careers** - Separate site may have different auth requirements
+
+### Technical Challenges:
+1. OAuth complexity - Interactive approval flow required
+2. 2FA - Cannot be automated without security risks
+3. Session management - Cookie/token storage and refresh
+4. Anti-bot detection - Amazon monitors automated logins
+5. Security - Storing Google credentials is unsafe
 
 ## Approach
 Dynamic JS - requires Playwright for JavaScript rendering
@@ -37,8 +68,9 @@ Job listings use numbered pagination with button clicks. Job cards are in `.job`
 - **Fallback**: "Load More" button (`.load-more`) - not visible in initial tests
 
 ## Challenges
+- **❌ Login Required** - Must authenticate with Google OAuth to see real job listings
 - Heavily JavaScript-rendered (needs Playwright)
-- Location filtering via URL doesn't work reliably (tested: `?location=Germany`, `?country=DE`)
+- Location filtering via URL doesn't work without authentication
 - Strong anti-bot measures (rate limiting)
 - No salary info available
 - No job_type/remote info available
@@ -113,3 +145,11 @@ Job listings use numbered pagination with button clicks. Job cards are in `.job`
 4. **Conservative rate limiting**: Longer delays (2000ms) due to Amazon's anti-bot measures
 5. **Parser choice**: html5lib for multi-page HTML concatenation reliability
 - Thorough URL testing is critical before implementation (follows refined guide)
+
+## Skip Decision
+
+**Date:** 2026-02-28
+**Reason:** Authentication requirement makes scraping impractical and unsafe
+**Action:** Scraper disabled, job listing acquisition requires manual login or use of alternative job boards
+
+**Re-enabled if:** Amazon.jobs offers public API access or removes authentication requirement for job listings
